@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "255204038896",
+    "project_id": "nexolauncher-63801",
+    "storage_bucket": "nexolauncher-63801.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:255204038896:android:7dec07cfc843cade000a35",
+        "android_client_info": {
+          "package_name": "com.nexo.launcher"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCqfLiDXWMnh6aJbrRN8ZUM39qLUGHAYYE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

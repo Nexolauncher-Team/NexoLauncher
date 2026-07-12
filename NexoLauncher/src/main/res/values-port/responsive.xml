@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Split Weights - In portrait, we usually want full width for both if stacked -->
+    <item name="main_split_left_weight" format="float" type="dimen">1.0</item>
+    <item name="main_split_right_weight" format="float" type="dimen">1.0</item>
+
+    <!-- Guidelines - more space for portrait -->
+    <item name="notice_guideline_percent" format="float" type="dimen">0.9</item>
+    <item name="about_guideline_percent" format="float" type="dimen">0.9</item>
+
+    <!-- Flow settings for responsive stacking -->
+    <integer name="main_flow_max_elements">1</integer>
+    <integer name="main_flow_orientation">1</integer> <!-- vertical -->
+</resources>

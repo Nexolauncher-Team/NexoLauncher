@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Split Weights -->
+    <item name="main_split_left_weight" format="float" type="dimen">6.5</item>
+    <item name="main_split_right_weight" format="float" type="dimen">3.0</item>
+
+    <!-- Guidelines -->
+    <item name="notice_guideline_percent" format="float" type="dimen">0.35</item>
+    <item name="about_guideline_percent" format="float" type="dimen">0.69</item>
+
+    <!-- Flow settings for responsive stacking -->
+    <integer name="main_flow_max_elements">2</integer>
+    <integer name="main_flow_orientation">0</integer> <!-- horizontal -->
+</resources>
