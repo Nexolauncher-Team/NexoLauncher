@@ -24,9 +24,13 @@ NexoLauncher is developed using Android Studio. To build the project from source
 3. Sync the project with Gradle files.
 4. Use the build tasks in Android Studio to generate the APK.
 
-## Acknowledgements
+## Credits & Acknowledgements
 
-Originally based on open-source PojavLauncher and ZalithLauncher projects.
+NexoLauncher is an evolved version of the following amazing open-source projects:
+- **[ZalithLauncher](https://github.com/ZalithLauncher/ZalithLauncher)**: The primary foundation for our UI and AI integrations.
+- **[PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher)**: The core engine that makes Minecraft Java on Android possible.
+
+Special thanks to the original developers for their incredible contributions to the Minecraft Android community.
 
 ---
 Licensed under the [GNU GPLv3](LICENSE).
