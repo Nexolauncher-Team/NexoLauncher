@@ -27,10 +27,13 @@ NexoLauncher is developed using Android Studio. To build the project from source
 ## Credits & Acknowledgements
 
 NexoLauncher is an evolved version of the following amazing open-source projects:
-- **[ZalithLauncher](https://github.com/ZalithLauncher/ZalithLauncher)**: The primary foundation for our UI and AI integrations.
+- **[ZalithLauncher](https://github.com/ZalithLauncher/ZalithLauncher)**: Provided the initial UI foundation.
 - **[PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher)**: The core engine that makes Minecraft Java on Android possible.
 
-Special thanks to the original developers for their incredible contributions to the Minecraft Android community.
+**Original Innovations in NexoLauncher:**
+- The **AI Smart Assistant integration** and all AI-driven performance optimization features are unique additions developed specifically for this project.
+
+Special thanks to the original open-source developers for their incredible contributions to the community.
 
 ---
 Licensed under the [GNU GPLv3](LICENSE).
