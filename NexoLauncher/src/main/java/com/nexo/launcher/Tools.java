@@ -169,7 +169,9 @@ public final class Tools {
             }
         }
         // Remove the ':' at the end
-        libStr.setLength(libStr.length() - 1);
+        if (libStr.length() > 0) {
+            libStr.setLength(libStr.length() - 1);
+        }
         return libStr.toString();
     }
 
