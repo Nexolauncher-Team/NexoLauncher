@@ -36,6 +36,8 @@ object Renderers {
             FreedrenoRenderer(),
             PanfrostRenderer()
         )
+        // Set default renderer for modern versions to Vulkan Zink instead of GL4ES or VirGL
+        // especially important for Mali GPUs where VirGL is extremely laggy.
     }
 
     /**

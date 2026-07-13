@@ -131,6 +131,8 @@
     </application>
     <queries>
         <package android:name="com.nexo.launcher.ffmpeg"/>
+        <package android:name="com.movtery.nexolauncher.ffmpeg"/>
+        <package android:name="net.kdt.pojavlaunch.ffmpeg"/>
         <intent>
             <action android:name="android.intent.action.MAIN" />
         </intent>
