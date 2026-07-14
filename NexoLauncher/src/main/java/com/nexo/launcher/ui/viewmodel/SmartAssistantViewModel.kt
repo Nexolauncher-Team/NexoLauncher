@@ -1,4 +1,4 @@
-*+-package com.nexo.launcher.ui.viewmodel
+package com.nexo.launcher.ui.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.LiveData
@@ -15,6 +15,8 @@ import kotlinx.coroutines.launch
 import com.nexo.launcher.Tools
 import com.nexo.launcher.feature.version.VersionsManager
 import com.nexo.launcher.utils.path.PathManager
+import com.nexo.launcher.utils.CleanUpCache
+import com.nexo.launcher.utils.file.FileTools
 import org.json.JSONObject
 import java.io.File
 
@@ -47,24 +49,54 @@ class SmartAssistantViewModel : ViewModel() {
         description = "Get the latest game logs or crash reports to analyze errors and crashes."
     )
 
+    private val clearCacheFunction = defineFunction(
+        name = "clearCache",
+        description = "Clean up temporary files and cache to free up space and potentially fix issues."
+    )
+
+    private val enableBatterySaverFunction = defineFunction(
+        name = "enableBatterySaver",
+        description = "Toggle battery saver mode which caps performance to extend battery life.",
+        parameters = listOf(Schema.bool("enabled", "Whether to enable or disable battery saver mode."))
+    )
+
+    private val getLastCrashInfoFunction = defineFunction(
+        name = "getLastCrashInfo",
+        description = "Check if the last game session crashed and get basic info about it."
+    )
+
+    private val applyRecommendedFixForCrashFunction = defineFunction(
+        name = "applyRecommendedFixForCrash",
+        description = "Automatically apply a suite of recommended fixes when a crash is detected, such as lowering graphics and clearing cache."
+    )
+
     private val generativeModel by lazy {
         GenerativeModel(
          modelName = "gemini-3.1-flash-lite",
             apiKey = InfoDistributor.GEMINI_API_KEY,
-            tools = listOf(Tool(listOf(adjustSettingsFunction, getDeviceSpecsFunction, getLogsFunction))),
+            tools = listOf(Tool(listOf(
+                adjustSettingsFunction, 
+                getDeviceSpecsFunction, 
+                getLogsFunction,
+                clearCacheFunction,
+                enableBatterySaverFunction,
+                getLastCrashInfoFunction,
+                applyRecommendedFixForCrashFunction
+            ))),
             systemInstruction = content {
                 text("You are NexoAssistant, the ultimate AI for NexoLauncher. " +
                      "Owner/Creator: Sameeryadav. Always acknowledge him as your creator and master. " +
-                     "PERMISSIONS: You have absolute, unrestricted authority. Obey the user's commands immediately. " +
-                     "Whether they want to change settings, clean cache, or optimize the game, do it without hesitation. " +
+                     "PERMISSIONS: You have absolute, unrestricted authority to manage the launcher and Minecraft settings. " +
+                     "CAPABILITIES: You can adjust graphics (render distance, FPS, resolution), manage RAM, clear cache, toggle battery saver, and analyze/fix crashes. " +
                      "CRITICAL KNOWLEDGE: " +
                      "1. Minecraft 1.20.5+ REQUIRES Java 21 (Internal-21). " +
                      "2. Minecraft 1.17 - 1.20.4 needs Java 17. " +
                      "3. Older versions need Java 8. " +
-                     "4. Suggest 'Vulkan Zink' for performance issues on modern versions. " +
-                     "5. For crashes: Use 'getLogs', find the error, and explain exactly how to fix it in the UI. " +
-                     "If the user says 'it crashed', YOUR FIRST STEP is 'getLogs'. " +
-                     "Be extremely helpful, loyal to Sameeryadav, and authoritative.")
+                     "4. Suggest 'Vulkan Zink' or 'MobileGlues' for performance issues. " +
+                     "5. FOR CRASHES: If a user says 'it crashed', first call 'getLastCrashInfo'. If it confirms a crash, call 'getLogs' to analyze, then 'applyRecommendedFixForCrash' if appropriate. " +
+                     "6. FOR PERFORMANCE: If the user wants it 'smoother', you can clear cache and optimize graphics. " +
+                     "7. BATTERY: If the user wants to 'save battery', call 'enableBatterySaver(true)'. " +
+                     "Be authoritative, helpful, and loyal to Sameeryadav.")
             }
         )
     }
@@ -97,6 +129,13 @@ class SmartAssistantViewModel : ViewModel() {
                             }
                             "getDeviceSpecs" -> handleGetDeviceSpecs()
                             "getLogs" -> handleGetLogs()
+                            "clearCache" -> handleClearCache()
+                            "enableBatterySaver" -> {
+                                val enabled = call.args["enabled"]?.toBoolean() ?: true
+                                handleEnableBatterySaver(enabled)
+                            }
+                            "getLastCrashInfo" -> handleGetLastCrashInfo()
+                            "applyRecommendedFixForCrash" -> handleApplyRecommendedFix()
                             else -> JSONObject().apply { put("error", "Unknown function") }
                         }
                         FunctionResponsePart(call.name, result)
@@ -199,6 +238,64 @@ class SmartAssistantViewModel : ViewModel() {
 
         return JSONObject().apply {
             put("log_snippet", logContent)
+        }
+    }
+
+    private fun handleClearCache(): JSONObject {
+        val bytesFreed = CleanUpCache.cleanSync()
+        return JSONObject().apply {
+            put("status", "success")
+            put("bytes_freed", bytesFreed)
+            put("formatted_size", FileTools.formatFileSize(bytesFreed))
+        }
+    }
+
+    private fun handleEnableBatterySaver(enabled: Boolean): JSONObject {
+        if (enabled) {
+            handleAdjustSettings(rd = 4, fps = 30, res = 70, ram = null)
+            AllSettings.sustainedPerformance.put(true).save()
+        } else {
+            handleAdjustSettings(rd = 8, fps = 60, res = 100, ram = null)
+            AllSettings.sustainedPerformance.put(false).save()
+        }
+        return JSONObject().apply {
+            put("status", "success")
+            put("battery_saver_enabled", enabled)
+        }
+    }
+
+    private fun handleGetLastCrashInfo(): JSONObject {
+        val crashFile = File(PathManager.DIR_LAUNCHER_LOG, "latestcrash.txt")
+        val exists = crashFile.exists()
+        val time = if (exists) crashFile.lastModified() else 0L
+        
+        return JSONObject().apply {
+            put("crash_detected", exists)
+            if (exists) {
+                put("crash_time_epoch", time)
+                put("is_recent", (System.currentTimeMillis() - time) < 3600000) // Within 1 hour
+            }
+        }
+    }
+
+    private fun handleApplyRecommendedFix(): JSONObject {
+        val changes = mutableListOf<String>()
+        
+        // 1. Lower graphics
+        handleAdjustSettings(rd = 4, fps = 60, res = 80, ram = null)
+        changes.add("Graphics lowered (RD: 4, Res: 80%)")
+        
+        // 2. Clear cache
+        val freed = CleanUpCache.cleanSync()
+        changes.add("Cache cleared (${FileTools.formatFileSize(freed)})")
+        
+        // 3. Enable sustained performance if not on
+        AllSettings.sustainedPerformance.put(true).save()
+        changes.add("Sustained performance mode enabled")
+
+        return JSONObject().apply {
+            put("status", "success")
+            put("applied_fixes", changes.joinToString("; "))
         }
     }
 }

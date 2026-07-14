@@ -4,6 +4,7 @@ import android.content.Context
 import com.nexo.launcher.feature.log.Logging
 import com.nexo.launcher.renderer.renderers.FreedrenoRenderer
 import com.nexo.launcher.renderer.renderers.GL4ESRenderer
+import com.nexo.launcher.renderer.renderers.MobileGlueOpenGLRenderer
 import com.nexo.launcher.renderer.renderers.PanfrostRenderer
 import com.nexo.launcher.renderer.renderers.VirGLRenderer
 import com.nexo.launcher.renderer.renderers.VulkanZinkRenderer
@@ -30,6 +31,7 @@ object Renderers {
         }
 
         addRenderers(
+            MobileGlueOpenGLRenderer(),
             GL4ESRenderer(),
             VulkanZinkRenderer(),
             VirGLRenderer(),

@@ -17,6 +17,7 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.view.InputDevice;
@@ -37,7 +38,6 @@ import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.nexo.launcher.anim.AnimPlayer;
 import com.nexo.launcher.anim.animations.Animations;
-import com.nexo.launcher.R;
 import com.nexo.launcher.context.ContextExecutor;
 import com.nexo.launcher.databinding.ActivityGameBinding;
 import com.nexo.launcher.databinding.ViewControlMenuBinding;
@@ -120,7 +120,11 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        minecraftVersion = getIntent().getParcelableExtra(INTENT_VERSION);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            minecraftVersion = getIntent().getParcelableExtra(INTENT_VERSION, Version.class);
+        } else {
+            minecraftVersion = getIntent().getParcelableExtra(INTENT_VERSION);
+        }
         if (minecraftVersion == null) throw new RuntimeException("The game version is not selected!");
 
         MCOptions.INSTANCE.setup(this, () -> minecraftVersion);
@@ -418,13 +422,14 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     }
 
     private static void setUri(Context context, String input) {
-        if(input.startsWith("file:")) {
+        String path = input;
+        if(path.startsWith("file:")) {
             int truncLength = 5;
-            if(input.startsWith("file://")) truncLength = 7;
-            input = input.substring(truncLength);
-            Logging.i("MainActivity", input);
+            if(path.startsWith("file://")) truncLength = 7;
+            path = path.substring(truncLength);
+            Logging.i("MainActivity", path);
 
-            File inputFile = new File(input);
+            File inputFile = new File(path);
             FileTools.shareFile(context, inputFile);
             Logging.i("In-game Share File/Folder", "Start!");
         } else {

@@ -18,7 +18,6 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 
 import com.google.firebase.FirebaseApp;
-import com.nexo.launcher.InfoDistributor;
 import com.nexo.launcher.context.ContextExecutor;
 import com.nexo.launcher.context.LocaleHelper;
 import com.nexo.launcher.firebase.FirebaseBackupManager;
@@ -56,7 +55,7 @@ public class PojavApplication extends Application {
 				crashStream.append(" - Time: ").append(DateFormat.getDateTimeInstance().format(new Date())).append("\n");
 				crashStream.append(" - Device: ").append(Build.PRODUCT).append(" ").append(Build.MODEL).append("\n");
 				crashStream.append(" - Android version: ").append(Build.VERSION.RELEASE).append("\n");
-				crashStream.append(" - Launcher version: ").append(getVersionName()).append(" (").append(String.valueOf(getVersionCode())).append(")").append("\n");
+				crashStream.append(" - Launcher version: ").append(getVersionName()).append(" (").append("" + getVersionCode()).append(")").append("\n");
 				crashStream.append(" - Crash stack trace:\n");
 				crashStream.append(Log.getStackTraceString(th));
 				crashStream.close();
@@ -153,11 +152,11 @@ public class PojavApplication extends Application {
 		ContextExecutor.clearApplication();
 	}
 
-    @Override
-    public void onConfigurationChanged(@NonNull Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
+	@Override
+	public void onConfigurationChanged(@NonNull Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
 		ContextExecutor.setApplication(this);
 		LocaleHelper.Companion.setLocale(this);
-    }
+	}
 }
 

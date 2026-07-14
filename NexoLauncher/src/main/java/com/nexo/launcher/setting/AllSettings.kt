@@ -14,7 +14,7 @@ class AllSettings {
     companion object {
         // Video
         @JvmStatic
-        val renderer = StringSettingUnit("renderer", "opengles2")
+        val renderer = StringSettingUnit("renderer", "f3d2a8c1-b7e4-4d92-8f1a-6c9a3b5d2e7f")
 
         @JvmStatic
         val driver = StringSettingUnit("driver", "Turnip")
