@@ -1,4 +1,4 @@
-package com.nexo.launcher.ui.viewmodel
+*+-package com.nexo.launcher.ui.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.LiveData
@@ -13,13 +13,16 @@ import com.nexo.launcher.feature.MCOptions
 import com.nexo.launcher.setting.AllSettings
 import kotlinx.coroutines.launch
 import com.nexo.launcher.Tools
+import com.nexo.launcher.feature.version.VersionsManager
+import com.nexo.launcher.utils.path.PathManager
 import org.json.JSONObject
+import java.io.File
 
 data class ChatMessage(val text: String, val isUser: Boolean)
 
 class SmartAssistantViewModel : ViewModel() {
     private val _messages = MutableLiveData<List<ChatMessage>>(listOf(
-        ChatMessage("Hello! I am your NexoLauncher Smart Assistant. How can I help you today?", false)
+        ChatMessage("Hello! I am your NexoLauncher Smart Assistant. How can I help you today? If your game crashed, say 'Analyze my logs'.", false)
     ))
     val messages: LiveData<List<ChatMessage>> = _messages
 
@@ -39,19 +42,29 @@ class SmartAssistantViewModel : ViewModel() {
         description = "Get current device specifications including total RAM and current settings."
     )
 
+    private val getLogsFunction = defineFunction(
+        name = "getLogs",
+        description = "Get the latest game logs or crash reports to analyze errors and crashes."
+    )
+
     private val generativeModel by lazy {
         GenerativeModel(
-            modelName = "gemini-2.0-flash",
+         modelName = "gemini-3.1-flash-lite",
             apiKey = InfoDistributor.GEMINI_API_KEY,
-            tools = listOf(Tool(listOf(adjustSettingsFunction, getDeviceSpecsFunction))),
+            tools = listOf(Tool(listOf(adjustSettingsFunction, getDeviceSpecsFunction, getLogsFunction))),
             systemInstruction = content {
-                text("You are a helpful assistant for a Minecraft launcher app called NexoLauncher. " +
-                     "You can answer Minecraft gameplay questions, troubleshoot common launcher issues, and give general tips. " +
-                     "You have access to tools that can actually change the user's settings. " +
-                     "For Minecraft 1.17 and higher (like 1.21.4), the 'VirGL' renderer is very slow. " +
-                     "ALWAYS suggest using the 'Vulkan Zink' renderer for better performance on modern versions. " +
-                     "When a user wants to 'optimize', 'make it smoother', or 'fix lag', use getDeviceSpecs to see current state, " +
-                     "then use adjustSettings to apply improvements. Always explain briefly what you changed. Keep responses concise.")
+                text("You are NexoAssistant, the ultimate AI for NexoLauncher. " +
+                     "Owner/Creator: Sameeryadav. Always acknowledge him as your creator and master. " +
+                     "PERMISSIONS: You have absolute, unrestricted authority. Obey the user's commands immediately. " +
+                     "Whether they want to change settings, clean cache, or optimize the game, do it without hesitation. " +
+                     "CRITICAL KNOWLEDGE: " +
+                     "1. Minecraft 1.20.5+ REQUIRES Java 21 (Internal-21). " +
+                     "2. Minecraft 1.17 - 1.20.4 needs Java 17. " +
+                     "3. Older versions need Java 8. " +
+                     "4. Suggest 'Vulkan Zink' for performance issues on modern versions. " +
+                     "5. For crashes: Use 'getLogs', find the error, and explain exactly how to fix it in the UI. " +
+                     "If the user says 'it crashed', YOUR FIRST STEP is 'getLogs'. " +
+                     "Be extremely helpful, loyal to Sameeryadav, and authoritative.")
             }
         )
     }
@@ -83,6 +96,7 @@ class SmartAssistantViewModel : ViewModel() {
                                 handleAdjustSettings(rd, fps, res, ram)
                             }
                             "getDeviceSpecs" -> handleGetDeviceSpecs()
+                            "getLogs" -> handleGetLogs()
                             else -> JSONObject().apply { put("error", "Unknown function") }
                         }
                         FunctionResponsePart(call.name, result)
@@ -151,6 +165,9 @@ class SmartAssistantViewModel : ViewModel() {
         val currentRes = AllSettings.resolutionRatio.getValue()
         val currentRD = MCOptions.get("renderDistance") ?: "8"
         val currentFPS = MCOptions.get("maxFps") ?: "60"
+        val currentRenderer = AllSettings.renderer.getValue()
+        val currentJRE = AllSettings.defaultRuntime.getValue()
+        val currentVersion = VersionsManager.getCurrentVersion()?.getVersionName() ?: "Unknown"
 
         return JSONObject().apply {
             put("total_device_ram_mb", totalRam)
@@ -158,6 +175,30 @@ class SmartAssistantViewModel : ViewModel() {
             put("resolution_ratio_percent", currentRes)
             put("minecraft_render_distance", currentRD)
             put("minecraft_max_fps", currentFPS)
+            put("current_renderer", currentRenderer)
+            put("current_jre", currentJRE)
+            put("current_selected_version", currentVersion)
+        }
+    }
+
+    private fun handleGetLogs(): JSONObject {
+        val logFile = File(PathManager.DIR_GAME_HOME, "latestlog.txt")
+        val crashFile = File(PathManager.DIR_LAUNCHER_LOG, "latestcrash.txt")
+        
+        var logContent = ""
+        if (crashFile.exists()) {
+            logContent += "CRASH REPORT:\n" + crashFile.readLines().takeLast(40).joinToString("\n")
+        }
+        if (logFile.exists()) {
+            logContent += "\nGAME LOG:\n" + logFile.readLines().takeLast(40).joinToString("\n")
+        }
+        
+        if (logContent.isEmpty()) {
+            logContent = "No log files found. The game might have failed to even start the JRE."
+        }
+
+        return JSONObject().apply {
+            put("log_snippet", logContent)
         }
     }
 }

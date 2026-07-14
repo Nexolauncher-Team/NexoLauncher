@@ -15,9 +15,7 @@ public class FFmpegPlugin {
     public static void discover(Context context) {
         PackageManager manager = context.getPackageManager();
         String[] possiblePackages = {
-                "com.nexo.launcher.ffmpeg",
-                "com.movtery.nexolauncher.ffmpeg",
-                "net.kdt.pojavlaunch.ffmpeg"
+                "com.nexo.launcher.ffmpeg"
         };
 
         for (String pkg : possiblePackages) {

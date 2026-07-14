@@ -39,7 +39,7 @@ val getBuildType = {
 }
 
 val nameId = "com.nexo.launcher"
-val generatedNexoDir = file("$buildDir/generated/source/nexo/java")
+val generatedNexoDir = layout.buildDirectory.dir("generated/source/nexo/java").get().asFile
 val launcherAPPName = project.findProperty("launcher_app_name") as? String ?: error("The \"launcher_app_name\" property is not set in gradle.properties.")
 val launcherName = project.findProperty("launcher_name") as? String ?: error("The \"launcher_name\" property is not set in gradle.properties.")
 val launcherVersionCode = (project.findProperty("launcher_version_code") as? String)?.toIntOrNull() ?: error("The \"launcher_version_code\" property is not set as an integer in gradle.properties.")
@@ -54,7 +54,7 @@ configurations {
 
 configure<StringFogExtension> {
     implementation = "com.github.megatronking.stringfog.xor.StringFogImpl"
-    fogPackages = arrayOf(nameId)
+    fogPackages = arrayOf("com.nexo.launcher")
     kg = com.github.megatronking.stringfog.plugin.kg.RandomKeyGenerator()
     mode = com.github.megatronking.stringfog.plugin.StringFogMode.bytes
 }
