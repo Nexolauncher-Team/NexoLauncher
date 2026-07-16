@@ -15,13 +15,7 @@ A high-performance Minecraft Java and Bedrock Edition launcher for Android, desi
 - **Versatile Display**: Full support for both Portrait and Landscape orientations.
 - **Optimized Performance**: Built on a solid foundation to ensure smooth gameplay on Android devices.
 
-## Performance Optimization
-
-For an extra smooth experience, we recommend using the **MobileGlues** app. You can install it from GitHub to enhance your rendering performance significantly.
-
-- **Setup Video**: [Watch the MobileGlues Setup Guide](https://youtu.be/O6qs7796fkw?si=BLfz5Q-0Sd77Vm5a)
-
-## Building and Installation
+## Building and Installationtallation
 
 NexoLauncher is developed using Android Studio. To build the project from source:
 

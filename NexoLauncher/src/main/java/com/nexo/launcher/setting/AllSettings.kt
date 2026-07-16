@@ -32,7 +32,7 @@ class AllSettings {
         val sustainedPerformance = BooleanSettingUnit("sustainedPerformance", false)
 
         @JvmStatic
-        val alternateSurface = BooleanSettingUnit("alternate_surface", false)
+        val alternateSurface = BooleanSettingUnit("alternate_surface", true)
 
         @JvmStatic
         val forceVsync = BooleanSettingUnit("force_vsync", false)
@@ -190,6 +190,13 @@ class AllSettings {
 
         @JvmStatic
         val tcVibrateDuration = IntSettingUnit("tcVibrateDuration", 100)
+
+        // MobileGlues
+        @JvmStatic
+        val mobileGluesChannel = StringSettingUnit("mobileGluesChannel", "stable")
+
+        @JvmStatic
+        val mobileGluesInstalled = BooleanSettingUnit("mobileGluesInstalled", false)
 
         // Other
         @JvmStatic

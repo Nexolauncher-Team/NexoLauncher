@@ -199,6 +199,14 @@ public final class JREUtils {
             ldLibraryPath.append(runtimeModDir.getAbsolutePath()).append(":");
         }
         ldLibraryPath.append(DIR_NATIVE_LIB);
+
+        // Add MobileGlues library path if selected to ensure its dependencies are found
+        if (Renderers.INSTANCE.isCurrentRendererValid() && 
+            Renderers.INSTANCE.getCurrentRenderer().getRendererId().contains("mobile_glues")) {
+            File mgLibDir = new File(PathManager.DIR_FILE, "MG/libs");
+            ldLibraryPath.append(":").append(mgLibDir.getAbsolutePath());
+        }
+        
         LD_LIBRARY_PATH = ldLibraryPath.toString();
     }
 
@@ -256,13 +264,18 @@ public final class JREUtils {
 
         if (RendererPluginManager.getSelectedRendererPlugin() != null) return;
 
-        if (!rendererId.startsWith("opengles")) {
+        if (!rendererId.startsWith("opengles") && !rendererId.contains("mobile_glues")) {
             envMap.put("MESA_LOADER_DRIVER_OVERRIDE", "zink");
             envMap.put("MESA_GLSL_CACHE_DIR", PathManager.DIR_CACHE.getAbsolutePath());
             envMap.put("force_glsl_extensions_warn", "true");
             envMap.put("allow_higher_compat_version", "true");
             envMap.put("allow_glsl_extension_directive_midshader", "true");
             envMap.put("LIB_MESA_NAME", loadGraphicsLibrary());
+        } else if (rendererId.contains("mobile_glues")) {
+            // MobileGlues specific handling - Avoid MESA overrides that cause Signal 6
+            // We only need to tell the launcher which library to load for GL
+            envMap.put("LIB_MESA_NAME", loadGraphicsLibrary()); 
+            // The directory is already in LD_LIBRARY_PATH
         }
 
         if (!envMap.containsKey("LIBGL_ES")) {
@@ -273,7 +286,9 @@ public final class JREUtils {
                 //fallback to 2 since it's the minimum for the entire app
                 envMap.put("LIBGL_ES","2");
             } else if (rendererId.startsWith("opengles")) {
-                envMap.put("LIBGL_ES", rendererId.replace("opengles", "").replace("_5", ""));
+                String esVer = rendererId.replace("opengles", "");
+                if (esVer.contains("_")) esVer = esVer.substring(0, esVer.indexOf("_"));
+                envMap.put("LIBGL_ES", esVer);
             } else {
                 // TODO if can: other backends such as Vulkan.
                 // Sure, they should provide GLES 3 support.

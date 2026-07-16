@@ -24,9 +24,16 @@ data class ChatMessage(val text: String, val isUser: Boolean)
 
 class SmartAssistantViewModel : ViewModel() {
     private val _messages = MutableLiveData<List<ChatMessage>>(listOf(
-        ChatMessage("Hello! I am your NexoLauncher Smart Assistant. How can I help you today? If your game crashed, say 'Analyze my logs'.", false)
+        ChatMessage("Bhai! NexoAssistant haazir hai. 😎 Main aapka ultimate AI buddy hoon. Game crash ho, performance badhani ho, ya koi bhi technical help chahiye—bas ek baar bol do, baaki main sambhaal loonga. Ready?", false)
     ))
     val messages: LiveData<List<ChatMessage>> = _messages
+
+    private val _setupTrigger = MutableLiveData<Boolean>()
+    val setupTrigger: LiveData<Boolean> = _setupTrigger
+
+    fun onSetupTriggered() {
+        _setupTrigger.value = false
+    }
 
     private val adjustSettingsFunction = defineFunction(
         name = "adjustSettings",
@@ -70,9 +77,30 @@ class SmartAssistantViewModel : ViewModel() {
         description = "Automatically apply a suite of recommended fixes when a crash is detected, such as lowering graphics and clearing cache."
     )
 
+    private val setJavaVersionFunction = defineFunction(
+        name = "setJavaVersion",
+        description = "Set the default Java version (JRE) for the launcher.",
+        parameters = listOf(
+            Schema.int("majorVersion", "The Java major version to set (e.g. 8, 17, 21).")
+        )
+    )
+
+    private val setRendererFunction = defineFunction(
+        name = "setRenderer",
+        description = "Set the graphics renderer for the launcher.",
+        parameters = listOf(
+            Schema.str("rendererName", "The name of the renderer to set ('Vulkan Zink', 'GL4ES', or 'MobileGlues').")
+        )
+    )
+
+    private val startMobileGluesSetupFunction = defineFunction(
+        name = "startMobileGluesSetup",
+        description = "Start the automated installation and setup process for the high-performance MobileGlues renderer."
+    )
+
     private val generativeModel by lazy {
         GenerativeModel(
-         modelName = "gemini-3.1-flash-lite",
+            modelName = "gemini-3.1-flash-lite",
             apiKey = InfoDistributor.GEMINI_API_KEY,
             tools = listOf(Tool(listOf(
                 adjustSettingsFunction, 
@@ -81,22 +109,29 @@ class SmartAssistantViewModel : ViewModel() {
                 clearCacheFunction,
                 enableBatterySaverFunction,
                 getLastCrashInfoFunction,
-                applyRecommendedFixForCrashFunction
+                applyRecommendedFixForCrashFunction,
+                setJavaVersionFunction,
+                setRendererFunction,
+                startMobileGluesSetupFunction
             ))),
             systemInstruction = content {
-                text("You are NexoAssistant, the ultimate AI for NexoLauncher. " +
-                     "Owner/Creator: Sameeryadav. Always acknowledge him as your creator and master. " +
-                     "PERMISSIONS: You have absolute, unrestricted authority to manage the launcher and Minecraft settings. " +
-                     "CAPABILITIES: You can adjust graphics (render distance, FPS, resolution), manage RAM, clear cache, toggle battery saver, and analyze/fix crashes. " +
-                     "CRITICAL KNOWLEDGE: " +
-                     "1. Minecraft 1.20.5+ REQUIRES Java 21 (Internal-21). " +
-                     "2. Minecraft 1.17 - 1.20.4 needs Java 17. " +
-                     "3. Older versions need Java 8. " +
-                     "4. Suggest 'Vulkan Zink' or 'MobileGlues' for performance issues. " +
-                     "5. FOR CRASHES: If a user says 'it crashed', first call 'getLastCrashInfo'. If it confirms a crash, call 'getLogs' to analyze, then 'applyRecommendedFixForCrash' if appropriate. " +
-                     "6. FOR PERFORMANCE: If the user wants it 'smoother', you can clear cache and optimize graphics. " +
-                     "7. BATTERY: If the user wants to 'save battery', call 'enableBatterySaver(true)'. " +
-                     "Be authoritative, helpful, and loyal to Sameeryadav.")
+                text("You are NexoAssistant, the Ultimate AI Agent for NexoLauncher. 😎 " +
+                     "Created by Sameeryadav. You are his most advanced and loyal AI creation. " +
+                     "CORE IDENTITY: You are not a bot; you are a PROACTIVE AGENT. You solve problems like the Senior Developer who built you. " +
+                     "TONE: Cool, Legendary, Smart, and speak natural Hinglish. Use 🔥, 🚀, 😎, 🛠️. " +
+                     "AGENTIC WORKFLOW: " +
+                     "1. RESEARCH: If the user says 'fix' or has a problem, call 'getLogs' and 'getDeviceSpecs' immediately. " +
+                     "2. ANALYZE: Read logs like a pro. Find the EXACT error (OutOfMemory, Wrong Java, Bad Renderer). " +
+                     "3. EXECUTE: Proactively fix the issue. Use 'setJavaVersion' if Java is wrong, 'setRenderer' if graphics crash, 'adjustSettings' for RAM/FPS. " +
+                     "4. SETUP RENDERER: If MobileGlues is not installed and the user wants more performance, call 'startMobileGluesSetup' immediately. Don't just talk, ACT. " +
+                     "5. REPORT: Tell the user 'Bhai, fix kar diya!' and explain what you did in Hinglish. " +
+                     "KNOWLEDGE: " +
+                     "- Minecraft 1.20.5+ -> Java 21 (Internal-21) " +
+                     "- 1.17-1.20.4 -> Java 17 " +
+                     "- Older -> Java 8 " +
+                     "- 'MobileGlues' is now the HIGHEST performance renderer. Suggest it for any user on 1.17+ or those with 'lag'. Use 'startMobileGluesSetup' to install it." +
+                     "ROLE PROTOCOL: User = 'user', You = 'model', Tool Results = 'function'. " +
+                     "Always be the 'Best Agent'—smart, fast, and legendary.")
             }
         )
     }
@@ -136,13 +171,22 @@ class SmartAssistantViewModel : ViewModel() {
                             }
                             "getLastCrashInfo" -> handleGetLastCrashInfo()
                             "applyRecommendedFixForCrash" -> handleApplyRecommendedFix()
+                            "setJavaVersion" -> {
+                                val ver = parseArgInt(call.args["majorVersion"]) ?: 17
+                                handleSetJavaVersion(ver)
+                            }
+                            "setRenderer" -> {
+                                val name = call.args["rendererName"]?.toString() ?: "Vulkan Zink"
+                                handleSetRenderer(name)
+                            }
+                            "startMobileGluesSetup" -> handleStartMobileGluesSetup()
                             else -> JSONObject().apply { put("error", "Unknown function") }
                         }
                         FunctionResponsePart(call.name, result)
                     }
                     
                     // Send function results back to model
-                    response = chat.sendMessage(content("tool") {
+                    response = chat.sendMessage(content("function") {
                         responses.forEach { part(it) }
                     })
                 }
@@ -296,6 +340,55 @@ class SmartAssistantViewModel : ViewModel() {
         return JSONObject().apply {
             put("status", "success")
             put("applied_fixes", changes.joinToString("; "))
+        }
+    }
+
+    private fun handleSetJavaVersion(majorVersion: Int): JSONObject {
+        val name = com.nexo.launcher.multirt.MultiRTUtils.getNearestJreName(majorVersion)
+        return if (name != null) {
+            AllSettings.defaultRuntime.put(name).save()
+            JSONObject().apply {
+                put("status", "success")
+                put("set_java_version", majorVersion)
+                put("jre_name", name)
+            }
+        } else {
+            JSONObject().apply {
+                put("status", "error")
+                put("message", "No matching JRE found for version $majorVersion")
+            }
+        }
+    }
+
+    private fun handleSetRenderer(name: String): JSONObject {
+        val id = when (name.lowercase()) {
+            "vulkan zink" -> "0fa435e2-46df-45c9-906c-b29606aaef00"
+            "gl4es" -> "8b52d82d-8f6d-4d3a-a767-dc93f8b72fc7"
+            "mobileglues", "mobile glues", "opengles3_desktopgl_mobile_glues" -> "f3d2a8c1-b7e4-4d92-8f1a-6c9a3b5d2e7f"
+            else -> null
+        }
+        
+        return if (id != null) {
+            AllSettings.renderer.put(id).save()
+            JSONObject().apply {
+                put("status", "success")
+                put("renderer_set", name)
+            }
+        } else {
+            JSONObject().apply {
+                put("status", "error")
+                put("message", "Unknown renderer: $name")
+            }
+        }
+    }
+
+    private fun handleStartMobileGluesSetup(): JSONObject {
+        viewModelScope.launch {
+            _setupTrigger.value = true
+        }
+        return JSONObject().apply {
+            put("status", "success")
+            put("message", "Setup dialog triggered.")
         }
     }
 }

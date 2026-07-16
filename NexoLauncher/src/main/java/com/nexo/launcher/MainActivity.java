@@ -75,6 +75,11 @@ import com.nexo.launcher.utils.ZHTools;
 import com.nexo.launcher.utils.anim.AnimUtils;
 import com.nexo.launcher.utils.file.FileTools;
 import com.nexo.launcher.utils.stringutils.StringUtils;
+import com.nexo.launcher.feature.gpu.GPUManager;
+import com.nexo.launcher.feature.renderer.MobileGluesConfigManager;
+import com.nexo.launcher.feature.renderer.MobileGluesHub;
+import com.nexo.launcher.feature.renderer.MobileGluesUpdateManager;
+import com.nexo.launcher.ui.dialog.MobileGluesSetupDialog;
 import com.skydoves.powerspinner.OnSpinnerItemSelectedListener;
 
 import com.nexo.launcher.customcontrols.ControlButtonMenuListener;
@@ -150,6 +155,8 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
 
         // é˜²æ­¢ç³»ç»Ÿæ¯å±
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+        setupMobileGluesIfNeeded();
 
         ControlLayout controlLayout = binding.mainControlLayout;
         mControlSettingsBinding = ViewControlMenuBinding.inflate(getLayoutInflater());
@@ -258,6 +265,31 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
             });
         } catch (Throwable e) {
             Tools.showError(this, e, true);
+        }
+    }
+
+    private void setupMobileGluesIfNeeded() {
+        GPUManager.INSTANCE.detectGPU(this);
+        
+        if (!MobileGluesHub.INSTANCE.isInstalled(this)) {
+            // Automatic optimization for first launch
+            MobileGluesConfigManager.INSTANCE.optimizeForHardware(this, GPUManager.INSTANCE.getGPUVendor());
+
+            // If it's a version that benefits from it, or just proactively
+            MobileGluesUpdateManager.INSTANCE.checkForUpdates(this, AllSettings.getMobileGluesChannel().getValue(), release -> {
+                if (release != null) {
+                    TaskExecutors.runInUIThread(() -> {
+                        new MobileGluesSetupDialog(MainActivity.this, release, success -> {
+                            if (success) {
+                                AllSettings.getMobileGluesInstalled().put(true).save();
+                                Toast.makeText(MainActivity.this, "MobileGlues is active!", Toast.LENGTH_SHORT).show();
+                            }
+                            return kotlin.Unit.INSTANCE;
+                        }).show();
+                    });
+                }
+                return kotlin.Unit.INSTANCE;
+            });
         }
     }
 

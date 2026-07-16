@@ -81,6 +81,11 @@ import com.nexo.launcher.ui.subassembly.settingsbutton.SettingsButtonWrapper;
 import com.nexo.launcher.ui.subassembly.view.DraggableViewWrapper;
 import com.nexo.launcher.utils.StoragePermissionsUtils;
 import com.nexo.launcher.utils.ZHTools;
+import com.nexo.launcher.feature.gpu.GPUManager;
+import com.nexo.launcher.feature.renderer.MobileGluesConfigManager;
+import com.nexo.launcher.feature.renderer.MobileGluesHub;
+import com.nexo.launcher.feature.renderer.MobileGluesUpdateManager;
+import com.nexo.launcher.ui.dialog.MobileGluesSetupDialog;
 import com.nexo.launcher.utils.anim.ViewAnimUtils;
 import com.nexo.launcher.utils.file.FileTools;
 import com.nexo.launcher.utils.image.ImageUtils;
@@ -380,12 +385,38 @@ public class LauncherActivity extends BaseActivity {
         );
 
         checkNotice();
+        setupMobileGluesIfNeeded();
 
         //æ£€æŸ¥å·²ç»ä¸‹è½½åŽçš„åŒ…ï¼Œæˆ–è€…æ£€æŸ¥æ›´æ–°
         Task.runTask(() -> {
             UpdateUtils.checkDownloadedPackage(this, false, true);
             return null;
         }).execute();
+    }
+
+    private void setupMobileGluesIfNeeded() {
+        GPUManager.INSTANCE.detectGPU(this);
+        
+        if (!MobileGluesHub.INSTANCE.isInstalled(this)) {
+            // Automatic optimization for first launch
+            MobileGluesConfigManager.INSTANCE.optimizeForHardware(this, GPUManager.INSTANCE.getGPUVendor());
+
+            // If it's a version that benefits from it, or just proactively
+            MobileGluesUpdateManager.INSTANCE.checkForUpdates(this, AllSettings.getMobileGluesChannel().getValue(), release -> {
+                if (release != null) {
+                    TaskExecutors.runInUIThread(() -> {
+                        new MobileGluesSetupDialog(LauncherActivity.this, release, success -> {
+                            if (success) {
+                                AllSettings.getMobileGluesInstalled().put(true).save();
+                                Toast.makeText(LauncherActivity.this, "MobileGlues is active!", Toast.LENGTH_SHORT).show();
+                            }
+                            return kotlin.Unit.INSTANCE;
+                        }).show();
+                    });
+                }
+                return kotlin.Unit.INSTANCE;
+            });
+        }
     }
 
     private void processFragment() {

@@ -11,6 +11,11 @@ import com.nexo.launcher.anim.animations.Animations
 import com.nexo.launcher.databinding.FragmentSmartAssistantBinding
 import com.nexo.launcher.ui.adapter.ChatAdapter
 import com.nexo.launcher.ui.viewmodel.SmartAssistantViewModel
+import com.nexo.launcher.feature.renderer.MobileGluesUpdateManager
+import com.nexo.launcher.ui.dialog.MobileGluesSetupDialog
+import com.nexo.launcher.setting.AllSettings
+import com.nexo.launcher.task.TaskExecutors
+import android.widget.Toast
 
 class SmartAssistantFragment : FragmentWithAnim() {
     companion object {
@@ -46,6 +51,13 @@ class SmartAssistantFragment : FragmentWithAnim() {
             }
         }
 
+        viewModel.setupTrigger.observe(viewLifecycleOwner) { triggered ->
+            if (triggered) {
+                viewModel.onSetupTriggered()
+                startMobileGluesSetupFlow()
+            }
+        }
+
         binding.sendButton.setOnClickListener {
             val query = binding.queryInput.text.toString()
             if (query.isNotBlank()) {
@@ -56,6 +68,26 @@ class SmartAssistantFragment : FragmentWithAnim() {
 
         binding.returnButton.setOnClickListener {
             forceBack()
+        }
+    }
+
+    private fun startMobileGluesSetupFlow() {
+        val context = requireContext()
+        MobileGluesUpdateManager.checkForUpdates(context) { release ->
+            if (release != null) {
+                TaskExecutors.runInUIThread {
+                    MobileGluesSetupDialog(requireActivity(), release) { success ->
+                        if (success) {
+                            AllSettings.mobileGluesInstalled.put(true).save()
+                            Toast.makeText(context, "MobileGlues installed successfully!", Toast.LENGTH_SHORT).show()
+                        }
+                    }.show()
+                }
+            } else {
+                TaskExecutors.runInUIThread {
+                    Toast.makeText(context, "Could not find a MobileGlues release.", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 

@@ -4,7 +4,7 @@ import android.content.Context
 import com.nexo.launcher.feature.log.Logging
 import com.nexo.launcher.renderer.renderers.FreedrenoRenderer
 import com.nexo.launcher.renderer.renderers.GL4ESRenderer
-import com.nexo.launcher.renderer.renderers.MobileGlueOpenGLRenderer
+import com.nexo.launcher.renderer.renderers.MobileGluesRenderer
 import com.nexo.launcher.renderer.renderers.PanfrostRenderer
 import com.nexo.launcher.renderer.renderers.VirGLRenderer
 import com.nexo.launcher.renderer.renderers.VulkanZinkRenderer
@@ -31,12 +31,12 @@ object Renderers {
         }
 
         addRenderers(
-            MobileGlueOpenGLRenderer(),
             GL4ESRenderer(),
             VulkanZinkRenderer(),
             VirGLRenderer(),
             FreedrenoRenderer(),
-            PanfrostRenderer()
+            PanfrostRenderer(),
+            MobileGluesRenderer()
         )
         // Set default renderer for modern versions to Vulkan Zink instead of GL4ES or VirGL
         // especially important for Mali GPUs where VirGL is extremely laggy.

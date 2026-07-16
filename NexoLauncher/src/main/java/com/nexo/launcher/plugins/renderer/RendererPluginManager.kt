@@ -83,8 +83,7 @@ object RendererPluginManager {
         val renderer = apkRendererPluginList.find { it.uniqueIdentifier == rendererUniqueIdentifier }
         return renderer?.takeIf { it.packageName in setOf(
                 "com.bzlzhh.plugin.ngg",
-                "com.bzlzhh.plugin.ngg.angleless",
-                "com.fcl.plugin.mobileglues"
+                "com.bzlzhh.plugin.ngg.angleless"
             ) }
     }
 
