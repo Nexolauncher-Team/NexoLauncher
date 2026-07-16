@@ -11,6 +11,10 @@ A high-performance Minecraft Java and Bedrock Edition launcher for Android, desi
   - **Battery Saver**: Manages resources to extend playtime on the go.
   - **Cache Cleaning**: One-tap removal of temporary files to free up storage.
   - **AI Chat**: Integrated assistant to answer questions and help with configuration.
+- **High-Performance Rendering**: 
+  - **MobileGlues (OpenGL 4.6)**: Fully integrated high-performance renderer. **No manual work required!** The launcher handles setup and extraction automatically.
+  - **One-Tap Play**: Just install and play—all library configurations and hardware optimizations are handled by NexoLauncher.
+  - **Proactive Hardware Tuning**: Automatically detects and optimizes graphics for Adreno and Mali GPUs.
 - **Google Account Integration**: Seamlessly backup and restore your launcher settings using your Google account.
 - **Versatile Display**: Full support for both Portrait and Landscape orientations.
 - **Optimized Performance**: Built on a solid foundation to ensure smooth gameplay on Android devices.
