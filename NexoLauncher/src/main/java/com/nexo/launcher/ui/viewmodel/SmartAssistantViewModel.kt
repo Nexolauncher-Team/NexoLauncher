@@ -5,8 +5,9 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.*
+import com.google.firebase.Firebase
+import com.google.firebase.ai.ai
+import com.google.firebase.ai.type.*
 import com.nexo.launcher.InfoDistributor
 import com.nexo.launcher.context.ContextExecutor
 import com.nexo.launcher.feature.MCOptions
@@ -17,7 +18,7 @@ import com.nexo.launcher.feature.version.VersionsManager
 import com.nexo.launcher.utils.path.PathManager
 import com.nexo.launcher.utils.CleanUpCache
 import com.nexo.launcher.utils.file.FileTools
-import org.json.JSONObject
+import kotlinx.serialization.json.*
 import java.io.File
 
 data class ChatMessage(val text: String, val isUser: Boolean)
@@ -35,74 +36,73 @@ class SmartAssistantViewModel : ViewModel() {
         _setupTrigger.value = false
     }
 
-    private val adjustSettingsFunction = defineFunction(
+    private val adjustSettingsFunction = FunctionDeclaration(
         name = "adjustSettings",
         description = "Adjust Minecraft and launcher settings to optimize performance or quality.",
-        parameters = listOf(
-            Schema.int("renderDistance", "Render distance in chunks (e.g. 2, 4, 8, 12). Lower values improve performance."),
-            Schema.int("maxFps", "Maximum FPS cap. 0 for unlimited. Higher values look smoother but use more power."),
-            Schema.int("resolutionRatio", "Internal resolution scaling in percent (25-100). Lower values significantly improve FPS."),
-            Schema.int("ramAllocation", "RAM allocated to the game in MB (e.g. 1024, 2048). Higher values can fix stutters.")
+        parameters = mapOf(
+            "renderDistance" to Schema.integer("Render distance in chunks (e.g. 2, 4, 8, 12). Lower values improve performance."),
+            "maxFps" to Schema.integer("Maximum FPS cap. 0 for unlimited. Higher values look smoother but use more power."),
+            "resolutionRatio" to Schema.integer("Internal resolution scaling in percent (25-100). Lower values significantly improve FPS."),
+            "ramAllocation" to Schema.integer("RAM allocated to the game in MB (e.g. 1024, 2048). Higher values can fix stutters.")
         )
     )
 
-    private val getDeviceSpecsFunction = defineFunction(
+    private val getDeviceSpecsFunction = FunctionDeclaration(
         name = "getDeviceSpecs",
         description = "Get current device specifications including total RAM and current settings."
     )
 
-    private val getLogsFunction = defineFunction(
+    private val getLogsFunction = FunctionDeclaration(
         name = "getLogs",
         description = "Get the latest game logs or crash reports to analyze errors and crashes."
     )
 
-    private val clearCacheFunction = defineFunction(
+    private val clearCacheFunction = FunctionDeclaration(
         name = "clearCache",
         description = "Clean up temporary files and cache to free up space and potentially fix issues."
     )
 
-    private val enableBatterySaverFunction = defineFunction(
+    private val enableBatterySaverFunction = FunctionDeclaration(
         name = "enableBatterySaver",
         description = "Toggle battery saver mode which caps performance to extend battery life.",
-        parameters = listOf(Schema.bool("enabled", "Whether to enable or disable battery saver mode."))
+        parameters = mapOf("enabled" to Schema.boolean("Whether to enable or disable battery saver mode."))
     )
 
-    private val getLastCrashInfoFunction = defineFunction(
+    private val getLastCrashInfoFunction = FunctionDeclaration(
         name = "getLastCrashInfo",
         description = "Check if the last game session crashed and get basic info about it."
     )
 
-    private val applyRecommendedFixForCrashFunction = defineFunction(
+    private val applyRecommendedFixForCrashFunction = FunctionDeclaration(
         name = "applyRecommendedFixForCrash",
         description = "Automatically apply a suite of recommended fixes when a crash is detected, such as lowering graphics and clearing cache."
     )
 
-    private val setJavaVersionFunction = defineFunction(
+    private val setJavaVersionFunction = FunctionDeclaration(
         name = "setJavaVersion",
         description = "Set the default Java version (JRE) for the launcher.",
-        parameters = listOf(
-            Schema.int("majorVersion", "The Java major version to set (e.g. 8, 17, 21).")
+        parameters = mapOf(
+            "majorVersion" to Schema.integer("The Java major version to set (e.g. 8, 17, 21).")
         )
     )
 
-    private val setRendererFunction = defineFunction(
+    private val setRendererFunction = FunctionDeclaration(
         name = "setRenderer",
         description = "Set the graphics renderer for the launcher.",
-        parameters = listOf(
-            Schema.str("rendererName", "The name of the renderer to set ('Vulkan Zink', 'GL4ES', or 'MobileGlues').")
+        parameters = mapOf(
+            "rendererName" to Schema.string("The name of the renderer to set ('Vulkan Zink', 'GL4ES', or 'MobileGlues').")
         )
     )
 
-    private val startMobileGluesSetupFunction = defineFunction(
+    private val startMobileGluesSetupFunction = FunctionDeclaration(
         name = "startMobileGluesSetup",
         description = "Start the automated installation and setup process for the high-performance MobileGlues renderer."
     )
 
     private val generativeModel by lazy {
-        GenerativeModel(
-            modelName = "gemini-3.1-flash-lite",
-            apiKey = InfoDistributor.GEMINI_API_KEY,
-            tools = listOf(Tool(listOf(
+        Firebase.ai(backend = GenerativeBackend.googleAI()).generativeModel(
+            modelName = "gemini-1.5-flash",
+            tools = listOf(Tool.functionDeclarations(listOf(
                 adjustSettingsFunction, 
                 getDeviceSpecsFunction, 
                 getLogsFunction,
@@ -150,10 +150,7 @@ class SmartAssistantViewModel : ViewModel() {
                 
                 // Handle potential function calls loop
                 while (response.functionCalls.isNotEmpty()) {
-                    val calls = response.functionCalls
-                    Log.d("SmartAssistant", "AI requested function calls: ${calls.size}")
-                    
-                    val responses = calls.map { call ->
+                    val responses = response.functionCalls.map { call ->
                         val result = when (call.name) {
                             "adjustSettings" -> {
                                 val rd = parseArgInt(call.args["renderDistance"])
@@ -166,7 +163,7 @@ class SmartAssistantViewModel : ViewModel() {
                             "getLogs" -> handleGetLogs()
                             "clearCache" -> handleClearCache()
                             "enableBatterySaver" -> {
-                                val enabled = call.args["enabled"]?.toBoolean() ?: true
+                                val enabled = call.args["enabled"]?.jsonPrimitive?.booleanOrNull ?: true
                                 handleEnableBatterySaver(enabled)
                             }
                             "getLastCrashInfo" -> handleGetLastCrashInfo()
@@ -176,11 +173,11 @@ class SmartAssistantViewModel : ViewModel() {
                                 handleSetJavaVersion(ver)
                             }
                             "setRenderer" -> {
-                                val name = call.args["rendererName"]?.toString() ?: "Vulkan Zink"
+                                val name = call.args["rendererName"]?.jsonPrimitive?.contentOrNull ?: "Vulkan Zink"
                                 handleSetRenderer(name)
                             }
                             "startMobileGluesSetup" -> handleStartMobileGluesSetup()
-                            else -> JSONObject().apply { put("error", "Unknown function") }
+                            else -> buildJsonObject { put("error", "Unknown function") }
                         }
                         FunctionResponsePart(call.name, result)
                     }
@@ -204,17 +201,17 @@ class SmartAssistantViewModel : ViewModel() {
         }
     }
 
-    private fun parseArgInt(arg: Any?): Int? {
-        return when (arg) {
-            is Int -> arg
-            is Long -> arg.toInt()
-            is Double -> arg.toInt()
-            is String -> arg.toIntOrNull()
-            else -> null
+    private fun parseArgInt(element: JsonElement?): Int? {
+        if (element == null) return null
+        return try {
+            element.jsonPrimitive.intOrNull ?: 
+            element.jsonPrimitive.contentOrNull?.toIntOrNull()
+        } catch (_: Exception) {
+            null
         }
     }
 
-    private fun handleAdjustSettings(rd: Int?, fps: Int?, res: Int?, ram: Int?): JSONObject {
+    private fun handleAdjustSettings(rd: Int?, fps: Int?, res: Int?, ram: Int?): JsonObject {
         val detail = mutableListOf<String>()
         rd?.let {
             MCOptions.set("renderDistance", it.toString())
@@ -235,13 +232,13 @@ class SmartAssistantViewModel : ViewModel() {
             detail.add("RAM to $it MB")
         }
 
-        return JSONObject().apply {
+        return buildJsonObject {
             put("status", "success")
             put("changes", detail.joinToString(", "))
         }
     }
 
-    private fun handleGetDeviceSpecs(): JSONObject {
+    private fun handleGetDeviceSpecs(): JsonObject {
         val context = ContextExecutor.getApplication()
         val totalRam = Tools.getTotalDeviceMemory(context)
         val currentRam = AllSettings.ramAllocation.value.getValue()
@@ -252,7 +249,7 @@ class SmartAssistantViewModel : ViewModel() {
         val currentJRE = AllSettings.defaultRuntime.getValue()
         val currentVersion = VersionsManager.getCurrentVersion()?.getVersionName() ?: "Unknown"
 
-        return JSONObject().apply {
+        return buildJsonObject {
             put("total_device_ram_mb", totalRam)
             put("allocated_ram_mb", currentRam)
             put("resolution_ratio_percent", currentRes)
@@ -264,7 +261,7 @@ class SmartAssistantViewModel : ViewModel() {
         }
     }
 
-    private fun handleGetLogs(): JSONObject {
+    private fun handleGetLogs(): JsonObject {
         val logFile = File(PathManager.DIR_GAME_HOME, "latestlog.txt")
         val crashFile = File(PathManager.DIR_LAUNCHER_LOG, "latestcrash.txt")
         
@@ -280,21 +277,21 @@ class SmartAssistantViewModel : ViewModel() {
             logContent = "No log files found. The game might have failed to even start the JRE."
         }
 
-        return JSONObject().apply {
+        return buildJsonObject {
             put("log_snippet", logContent)
         }
     }
 
-    private fun handleClearCache(): JSONObject {
+    private fun handleClearCache(): JsonObject {
         val bytesFreed = CleanUpCache.cleanSync()
-        return JSONObject().apply {
+        return buildJsonObject {
             put("status", "success")
             put("bytes_freed", bytesFreed)
             put("formatted_size", FileTools.formatFileSize(bytesFreed))
         }
     }
 
-    private fun handleEnableBatterySaver(enabled: Boolean): JSONObject {
+    private fun handleEnableBatterySaver(enabled: Boolean): JsonObject {
         if (enabled) {
             handleAdjustSettings(rd = 4, fps = 30, res = 70, ram = null)
             AllSettings.sustainedPerformance.put(true).save()
@@ -302,18 +299,18 @@ class SmartAssistantViewModel : ViewModel() {
             handleAdjustSettings(rd = 8, fps = 60, res = 100, ram = null)
             AllSettings.sustainedPerformance.put(false).save()
         }
-        return JSONObject().apply {
+        return buildJsonObject {
             put("status", "success")
             put("battery_saver_enabled", enabled)
         }
     }
 
-    private fun handleGetLastCrashInfo(): JSONObject {
+    private fun handleGetLastCrashInfo(): JsonObject {
         val crashFile = File(PathManager.DIR_LAUNCHER_LOG, "latestcrash.txt")
         val exists = crashFile.exists()
         val time = if (exists) crashFile.lastModified() else 0L
         
-        return JSONObject().apply {
+        return buildJsonObject {
             put("crash_detected", exists)
             if (exists) {
                 put("crash_time_epoch", time)
@@ -322,7 +319,7 @@ class SmartAssistantViewModel : ViewModel() {
         }
     }
 
-    private fun handleApplyRecommendedFix(): JSONObject {
+    private fun handleApplyRecommendedFix(): JsonObject {
         val changes = mutableListOf<String>()
         
         // 1. Lower graphics
@@ -337,30 +334,30 @@ class SmartAssistantViewModel : ViewModel() {
         AllSettings.sustainedPerformance.put(true).save()
         changes.add("Sustained performance mode enabled")
 
-        return JSONObject().apply {
+        return buildJsonObject {
             put("status", "success")
             put("applied_fixes", changes.joinToString("; "))
         }
     }
 
-    private fun handleSetJavaVersion(majorVersion: Int): JSONObject {
+    private fun handleSetJavaVersion(majorVersion: Int): JsonObject {
         val name = com.nexo.launcher.multirt.MultiRTUtils.getNearestJreName(majorVersion)
         return if (name != null) {
             AllSettings.defaultRuntime.put(name).save()
-            JSONObject().apply {
+            buildJsonObject {
                 put("status", "success")
                 put("set_java_version", majorVersion)
                 put("jre_name", name)
             }
         } else {
-            JSONObject().apply {
+            buildJsonObject {
                 put("status", "error")
                 put("message", "No matching JRE found for version $majorVersion")
             }
         }
     }
 
-    private fun handleSetRenderer(name: String): JSONObject {
+    private fun handleSetRenderer(name: String): JsonObject {
         val id = when (name.lowercase()) {
             "vulkan zink" -> "0fa435e2-46df-45c9-906c-b29606aaef00"
             "gl4es" -> "8b52d82d-8f6d-4d3a-a767-dc93f8b72fc7"
@@ -370,23 +367,23 @@ class SmartAssistantViewModel : ViewModel() {
         
         return if (id != null) {
             AllSettings.renderer.put(id).save()
-            JSONObject().apply {
+            buildJsonObject {
                 put("status", "success")
                 put("renderer_set", name)
             }
         } else {
-            JSONObject().apply {
+            buildJsonObject {
                 put("status", "error")
                 put("message", "Unknown renderer: $name")
             }
         }
     }
 
-    private fun handleStartMobileGluesSetup(): JSONObject {
+    private fun handleStartMobileGluesSetup(): JsonObject {
         viewModelScope.launch {
             _setupTrigger.value = true
         }
-        return JSONObject().apply {
+        return buildJsonObject {
             put("status", "success")
             put("message", "Setup dialog triggered.")
         }

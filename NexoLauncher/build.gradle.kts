@@ -262,7 +262,7 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.16.0")
     implementation("com.github.angcyo.DslTablayout:TabLayout:3.6.5")
 
-    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+    // implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
 
     implementation("com.github.megatronking.stringfog:xor:5.0.0")
 
@@ -293,7 +293,9 @@ dependencies {
     implementation("com.moandjiezana.toml:toml4j:0.7.2")
 
     // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
+    implementation(platform("com.google.firebase:firebase-bom:34.16.0"))
+    implementation("com.google.firebase:firebase-ai")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.android.gms:play-services-auth:21.2.0")
