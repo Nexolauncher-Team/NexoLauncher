@@ -18,6 +18,8 @@ object MCOptions {
     private var fileObserver: FileObserver? = null
     private lateinit var versionGetter: MinecraftVersionGetter
 
+    fun isInitialized() = ::versionGetter.isInitialized
+
     /**
      * åˆå§‹åŒ– MCOptions
      * æ£€æŸ¥ options.txt æ˜¯å¦å­˜åœ¨ï¼Œå¦‚æžœä¸å­˜åœ¨ï¼Œå°†ä¼šå¤åˆ¶ä¸€ä»½é»˜è®¤çš„ options.txt æ–‡ä»¶

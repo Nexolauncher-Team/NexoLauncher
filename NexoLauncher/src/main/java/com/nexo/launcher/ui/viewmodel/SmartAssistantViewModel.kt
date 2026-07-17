@@ -12,7 +12,9 @@ import com.nexo.launcher.InfoDistributor
 import com.nexo.launcher.context.ContextExecutor
 import com.nexo.launcher.feature.MCOptions
 import com.nexo.launcher.setting.AllSettings
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.nexo.launcher.Tools
 import com.nexo.launcher.feature.version.VersionsManager
 import com.nexo.launcher.utils.path.PathManager
@@ -49,17 +51,20 @@ class SmartAssistantViewModel : ViewModel() {
 
     private val getDeviceSpecsFunction = FunctionDeclaration(
         name = "getDeviceSpecs",
-        description = "Get current device specifications including total RAM and current settings."
+        description = "Get current device specifications including total RAM and current settings.",
+        parameters = emptyMap()
     )
 
     private val getLogsFunction = FunctionDeclaration(
         name = "getLogs",
-        description = "Get the latest game logs or crash reports to analyze errors and crashes."
+        description = "Get the latest game logs or crash reports to analyze errors and crashes.",
+        parameters = emptyMap()
     )
 
     private val clearCacheFunction = FunctionDeclaration(
         name = "clearCache",
-        description = "Clean up temporary files and cache to free up space and potentially fix issues."
+        description = "Clean up temporary files and cache to free up space and potentially fix issues.",
+        parameters = emptyMap()
     )
 
     private val enableBatterySaverFunction = FunctionDeclaration(
@@ -70,12 +75,14 @@ class SmartAssistantViewModel : ViewModel() {
 
     private val getLastCrashInfoFunction = FunctionDeclaration(
         name = "getLastCrashInfo",
-        description = "Check if the last game session crashed and get basic info about it."
+        description = "Check if the last game session crashed and get basic info about it.",
+        parameters = emptyMap()
     )
 
     private val applyRecommendedFixForCrashFunction = FunctionDeclaration(
         name = "applyRecommendedFixForCrash",
-        description = "Automatically apply a suite of recommended fixes when a crash is detected, such as lowering graphics and clearing cache."
+        description = "Automatically apply a suite of recommended fixes when a crash is detected, such as lowering graphics and clearing cache.",
+        parameters = emptyMap()
     )
 
     private val setJavaVersionFunction = FunctionDeclaration(
@@ -96,12 +103,13 @@ class SmartAssistantViewModel : ViewModel() {
 
     private val startMobileGluesSetupFunction = FunctionDeclaration(
         name = "startMobileGluesSetup",
-        description = "Start the automated installation and setup process for the high-performance MobileGlues renderer."
+        description = "Start the automated installation and setup process for the high-performance MobileGlues renderer.",
+        parameters = emptyMap()
     )
 
     private val generativeModel by lazy {
         Firebase.ai(backend = GenerativeBackend.googleAI()).generativeModel(
-            modelName = "gemini-1.5-flash",
+            modelName = "gemini-3.1-flash-lite",
             tools = listOf(Tool.functionDeclarations(listOf(
                 adjustSettingsFunction, 
                 getDeviceSpecsFunction, 
@@ -151,33 +159,35 @@ class SmartAssistantViewModel : ViewModel() {
                 // Handle potential function calls loop
                 while (response.functionCalls.isNotEmpty()) {
                     val responses = response.functionCalls.map { call ->
-                        val result = when (call.name) {
+                        // Strip any hallucinated prefixes like "default_api:" or "google_ai:"
+                        val cleanName = call.name.substringAfterLast(":")
+                        val result = when (cleanName) {
                             "adjustSettings" -> {
                                 val rd = parseArgInt(call.args["renderDistance"])
                                 val fps = parseArgInt(call.args["maxFps"])
                                 val res = parseArgInt(call.args["resolutionRatio"])
                                 val ram = parseArgInt(call.args["ramAllocation"])
-                                handleAdjustSettings(rd, fps, res, ram)
+                                withContext(Dispatchers.IO) { handleAdjustSettings(rd, fps, res, ram) }
                             }
-                            "getDeviceSpecs" -> handleGetDeviceSpecs()
-                            "getLogs" -> handleGetLogs()
-                            "clearCache" -> handleClearCache()
+                            "getDeviceSpecs" -> withContext(Dispatchers.IO) { handleGetDeviceSpecs() }
+                            "getLogs" -> withContext(Dispatchers.IO) { handleGetLogs() }
+                            "clearCache" -> withContext(Dispatchers.IO) { handleClearCache() }
                             "enableBatterySaver" -> {
                                 val enabled = call.args["enabled"]?.jsonPrimitive?.booleanOrNull ?: true
-                                handleEnableBatterySaver(enabled)
+                                withContext(Dispatchers.IO) { handleEnableBatterySaver(enabled) }
                             }
-                            "getLastCrashInfo" -> handleGetLastCrashInfo()
-                            "applyRecommendedFixForCrash" -> handleApplyRecommendedFix()
+                            "getLastCrashInfo" -> withContext(Dispatchers.IO) { handleGetLastCrashInfo() }
+                            "applyRecommendedFixForCrash" -> withContext(Dispatchers.IO) { handleApplyRecommendedFix() }
                             "setJavaVersion" -> {
                                 val ver = parseArgInt(call.args["majorVersion"]) ?: 17
-                                handleSetJavaVersion(ver)
+                                withContext(Dispatchers.IO) { handleSetJavaVersion(ver) }
                             }
                             "setRenderer" -> {
                                 val name = call.args["rendererName"]?.jsonPrimitive?.contentOrNull ?: "Vulkan Zink"
-                                handleSetRenderer(name)
+                                withContext(Dispatchers.IO) { handleSetRenderer(name) }
                             }
                             "startMobileGluesSetup" -> handleStartMobileGluesSetup()
-                            else -> buildJsonObject { put("error", "Unknown function") }
+                            else -> buildJsonObject { put("error", "Unknown function: ${call.name}") }
                         }
                         FunctionResponsePart(call.name, result)
                     }
@@ -211,7 +221,18 @@ class SmartAssistantViewModel : ViewModel() {
         }
     }
 
+    private fun ensureMCOptions() {
+        if (!MCOptions.isInitialized()) {
+            val context = ContextExecutor.getApplication()
+            val version = VersionsManager.getCurrentVersion()
+            if (version != null) {
+                MCOptions.setup(context) { version }
+            }
+        }
+    }
+
     private fun handleAdjustSettings(rd: Int?, fps: Int?, res: Int?, ram: Int?): JsonObject {
+        ensureMCOptions()
         val detail = mutableListOf<String>()
         rd?.let {
             MCOptions.set("renderDistance", it.toString())
@@ -239,6 +260,7 @@ class SmartAssistantViewModel : ViewModel() {
     }
 
     private fun handleGetDeviceSpecs(): JsonObject {
+        ensureMCOptions()
         val context = ContextExecutor.getApplication()
         val totalRam = Tools.getTotalDeviceMemory(context)
         val currentRam = AllSettings.ramAllocation.value.getValue()

@@ -38,6 +38,7 @@
         android:resizeableActivity="true"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/AppTheme"
+        android:enableOnBackInvokedCallback="true"
         tools:targetApi="r"
         tools:ignore="DiscouragedApi" >
         <meta-data

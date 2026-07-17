@@ -76,6 +76,9 @@ class AboutInfoPageFragment() : Fragment(R.layout.fragment_about_info_page) {
             }
 
             discordButton.setOnClickListener { ZHTools.openLink(requireActivity(), "https://discord.gg/yDDkTHp4cJ") }
+
+            privacyPolicyButton.setOnClickListener { ZHTools.openLink(requireActivity(), UrlManager.URL_PRIVACY_POLICY) }
+            termsOfServiceButton.setOnClickListener { ZHTools.openLink(requireActivity(), UrlManager.URL_TERMS_OF_SERVICE) }
         }
     }
 
@@ -94,12 +97,12 @@ class AboutInfoPageFragment() : Fragment(R.layout.fragment_about_info_page) {
         mAboutData.add(
             AboutItemBean(
                 resources.getDrawable(R.drawable.image_about_movtery, requireContext().theme),
-                "å¢¨åŒ—MovTery",
+                "Sameer Yadav",
                 getString(R.string.about_MovTery_desc),
                 AboutItemButtonBean(
                     requireActivity(),
-                    getString(R.string.about_access_space),
-                    "https://space.bilibili.com/2008204513"
+                    "Soon",
+                    "#"
                 )
             )
         )

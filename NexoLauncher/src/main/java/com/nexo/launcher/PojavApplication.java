@@ -18,6 +18,9 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.appcheck.FirebaseAppCheck;
+import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory;
+import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory;
 import com.nexo.launcher.context.ContextExecutor;
 import com.nexo.launcher.context.LocaleHelper;
 import com.nexo.launcher.firebase.FirebaseBackupManager;
@@ -70,6 +73,11 @@ public class PojavApplication extends Application {
 		
 		try {
 			super.onCreate();
+			
+			// Initialize Firebase and App Check immediately after super.onCreate()
+			// This ensures it's available for all components in any process.
+			initFirebase();
+
 			File filesDir = getDir("files", MODE_PRIVATE);
 			String dataPath = filesDir != null ? filesDir.getParent() : getFilesDir().getParent();
 			PathManager.DIR_DATA = dataPath != null ? dataPath : getFilesDir().getAbsolutePath();
@@ -102,17 +110,30 @@ public class PojavApplication extends Application {
 					break;
 			}
 		}
+	}
 
-		if (isMainProcess(this)) {
-			try {
-				Logging.i(CRASH_REPORT_TAG, "Initializing Firebase in launcher process...");
-				FirebaseApp.initializeApp(this);
-				FirebaseBackupManager.Companion.init(this);
-			} catch (Exception e) {
-				Logging.e(CRASH_REPORT_TAG, "Firebase init failed", e);
+	private void initFirebase() {
+		try {
+			Logging.i(CRASH_REPORT_TAG, "Initializing Firebase in process: " + getProcessName(this));
+			FirebaseApp.initializeApp(this);
+
+			FirebaseAppCheck firebaseAppCheck = FirebaseAppCheck.getInstance();
+			if (BuildConfig.DEBUG) {
+				Logging.i(CRASH_REPORT_TAG, "Installing DebugAppCheckProviderFactory");
+				firebaseAppCheck.installAppCheckProviderFactory(
+						DebugAppCheckProviderFactory.getInstance());
+			} else {
+				Logging.i(CRASH_REPORT_TAG, "Installing PlayIntegrityAppCheckProviderFactory");
+				firebaseAppCheck.installAppCheckProviderFactory(
+						PlayIntegrityAppCheckProviderFactory.getInstance());
 			}
-		} else {
-			Logging.i(CRASH_REPORT_TAG, "Skipping Firebase init in non-launcher process: " + getProcessName(this));
+
+			// Initialize Backup Manager only in main process to avoid redundant listeners
+			if (isMainProcess(this)) {
+				FirebaseBackupManager.Companion.init(this);
+			}
+		} catch (Exception e) {
+			Logging.e(CRASH_REPORT_TAG, "Firebase init failed", e);
 		}
 	}
 
