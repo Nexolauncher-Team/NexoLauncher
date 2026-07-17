@@ -43,9 +43,12 @@ Nexo Launcher isn't just a tool to open Minecraft; it's a **proactive agent** th
 ## 📸 Screenshots
 
 <div align="center">
-    <img src=".github/images/Screenshot_Launcher_Light_ZH_CN.jpg" width="30%" />
-    <img src=".github/images/Screenshot_Launcher_Dark_ZH_CN.jpg" width="30%" />
-    <img src=".github/images/Screenshot_Game_ZH_CN.jpg" width="30%" />
+    <img src=".github/images/ScreenShort_GamerSanjit.jpg" width="32%" />
+    <img src=".github/images/ScreenShort_GamerSanjitc.jpg" width="32%" />
+    <img src=".github/images/ScreenShort_GamerSanjitN.jpg" width="32%" />
+    <br><br>
+    <img src=".github/images/ScreenShort_GamerSanjitX.jpg" width="32%" />
+    <img src=".github/images/Screenshot_GamerSanjit.CN.jpg" width="32%" />
 </div>
 
 ## 🚀 Installation & Building
